@@ -1,6 +1,6 @@
-flask
-yt-dlp
-pydub
-openai-whisper
-transformers
-torch
+flask==2.3.2
+yt-dlp==2024.04.14
+pydub==0.25.1
+openai-whisper==20230314
+transformers==4.40.1
+torch==2.2.2
