@@ -1,6 +1,6 @@
+flask
 yt-dlp
-whisper
+pydub
+openai-whisper
 transformers
 torch
-pydub
-
