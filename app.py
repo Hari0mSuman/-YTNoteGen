@@ -2,16 +2,14 @@ from yt_dlp import YoutubeDL
 import whisper
 from transformers import pipeline
 import os
-import warnings
 from pydub import AudioSegment
 from pydub.utils import which
-import tkinter as tk
-from tkinter import messagebox, filedialog
+from flask import Flask, request, render_template_string
 
-warnings.filterwarnings("ignore", category=UserWarning)
+app = Flask(__name__)
 
 def download_audio(url):
-    base_path = r'C:\Users\h6354\OneDrive\Desktop\project\YTNoteGen'
+    base_path = os.path.dirname(os.path.abspath(__file__))
     ydl_opts = {
         'format': 'bestaudio[ext=m4a]/bestaudio',
         'outtmpl': os.path.join(base_path, 'audio.%(ext)s'),
@@ -44,53 +42,35 @@ def summarize_text(text):
         summary += result[0]['summary_text'].strip() + "\n"
     return summary.strip()
 
-def save_to_txt(text, filename="notes.txt"):
-    save_path = os.path.join(
-        r"C:\Users\h6354\OneDrive\Desktop\project\YTNoteGen", filename
-    )
-    with open(save_path, "w", encoding="utf-8") as f:
-        f.write(text)
-    return save_path
-
-def run_pipeline(url, status_label):
-    try:
-        status_label.config(text="🔊 Downloading audio...")
-        audio_path = download_audio(url)
-        status_label.config(text="📝 Transcribing audio...")
-        transcript = transcribe_audio(audio_path)
-        status_label.config(text="🧠 Summarizing transcript...")
-        summary = summarize_text(transcript)
-        status_label.config(text="💾 Saving notes...")
-        save_path = save_to_txt(summary)
-        status_label.config(text=f"✅ Done! Notes saved to {save_path}")
-        messagebox.showinfo("Success", f"Your notes are ready in:\n{save_path}")
-    except Exception as e:
-        status_label.config(text="❌ Error occurred!")
-        messagebox.showerror("Error", str(e))
-
-def start_gui():
-    root = tk.Tk()
-    root.title("YTNoteGen - YouTube to Text Notes Generator")
-    root.geometry("500x220")
-
-    tk.Label(root, text="Enter YouTube video URL:").pack(pady=10)
-    url_entry = tk.Entry(root, width=60)
-    url_entry.pack(pady=5)
-
-    status_label = tk.Label(root, text="", fg="blue")
-    status_label.pack(pady=10)
-
-    def on_generate():
-        url = url_entry.get().strip()
+@app.route("/", methods=["GET", "POST"])
+def index():
+    notes = ""
+    error = ""
+    if request.method == "POST":
+        url = request.form.get("url", "").strip()
         if not url:
-            messagebox.showerror("Error", "Please provide a valid YouTube URL.")
-            return
-        root.after(100, lambda: run_pipeline(url, status_label))
-
-    generate_btn = tk.Button(root, text="Generate Notes", command=on_generate)
-    generate_btn.pack(pady=10)
-
-    root.mainloop()
+            error = "Please provide a valid YouTube URL."
+        else:
+            try:
+                audio_path = download_audio(url)
+                transcript = transcribe_audio(audio_path)
+                notes = summarize_text(transcript)
+            except Exception as e:
+                error = str(e)
+    return render_template_string("""
+        <h2>YouTube to Notes Generator</h2>
+        <form method="post">
+            <input name="url" style="width:400px" placeholder="YouTube URL">
+            <button type="submit">Generate Notes</button>
+        </form>
+        {% if notes %}
+            <h3>Notes:</h3>
+            <pre>{{ notes }}</pre>
+        {% endif %}
+        {% if error %}
+            <p style="color:red;">{{ error }}</p>
+        {% endif %}
+    """, notes=notes, error=error)
 
 if __name__ == "__main__":
-    start_gui()
+    app.run(host="0.0.0.0", port=10000)
