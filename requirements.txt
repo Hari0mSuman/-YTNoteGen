@@ -1,6 +1,6 @@
 yt-dlp
-openai-whisper
+whisper
 transformers
 torch
 pydub
-tkinter
+tkinter ; optional, part of stdlib—don’t include this in pip-based installs
