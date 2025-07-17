@@ -3,4 +3,4 @@ whisper
 transformers
 torch
 pydub
-tkinter ; optional, part of stdlib—don’t include this in pip-based installs
+
